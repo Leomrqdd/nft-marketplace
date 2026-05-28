@@ -6,6 +6,7 @@ pub mod delist;
 pub mod make_offer;
 pub mod cancel_offer;
 pub mod take_offer;
+pub mod withdraw_fees;
 
 pub use initialize::*;
 pub use list::*;
@@ -15,3 +16,4 @@ pub use delist::*;
 pub use make_offer::*;
 pub use cancel_offer::*;
 pub use take_offer::*;
+pub use withdraw_fees::*;

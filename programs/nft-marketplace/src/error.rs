@@ -8,4 +8,6 @@ pub enum MarketplaceError {
     InvalidPaymentMint,
     #[msg("Invalid offer")]
     InvalidOffer,
+    #[msg("Unauthorized")]
+    Unauthorized,
 }
