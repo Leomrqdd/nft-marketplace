@@ -6,4 +6,6 @@ pub enum MarketplaceError {
     InvalidListing,
     #[msg("Invalid payment mint")]
     InvalidPaymentMint,
+    #[msg("Invalid offer")]
+    InvalidOffer,
 }

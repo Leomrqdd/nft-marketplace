@@ -22,3 +22,15 @@ pub struct Listing {
     pub payment_mint: Option<Pubkey>,
     pub bump: u8,
 }
+
+
+
+#[account]
+#[derive(InitSpace)]
+pub struct Offer {
+    pub taker: Pubkey,
+    pub asset: Pubkey,
+    pub offer_amount: u64,
+    pub bump: u8,
+    pub bump_vault: u8,
+}
