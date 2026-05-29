@@ -9,7 +9,7 @@ use anchor_lang::prelude::*;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("FdQ9QdcVkYVqqGwCX8ghKiZAiDzYdbuC9c63rhuqVCmf");
+declare_id!("G44fXcPH23NvyBJwENuHpsc75DX9wJEWNb16At3zFzMD");
 
 #[program]
 pub mod anchor_core_staking {
@@ -19,11 +19,11 @@ pub mod anchor_core_staking {
         ctx.accounts.initialize(fee_bps, name, &ctx.bumps)
     }
 
-    pub fn list(ctx: Context<List>, price: u64) -> Result<()> {
+    pub fn list(ctx: Context<List>, name: String, price: u64) -> Result<()> {
         ctx.accounts.list(price, &ctx.bumps)
     }
 
-    pub fn buy (ctx:Context<Buy>) -> Result<()> {
+    pub fn buy(ctx: Context<Buy>, name: String) -> Result<()> {
         ctx.accounts.buy()
     }
 

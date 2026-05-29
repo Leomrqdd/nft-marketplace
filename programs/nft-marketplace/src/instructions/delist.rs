@@ -1,13 +1,9 @@
-use std::iter::Map;
-
 use anchor_lang::prelude::*;
 
 use mpl_core::{
     ID as MPL_CORE_ID,
-    accounts::BaseCollectionV1,
-    instructions::{TransferV1, TransferV1CpiBuilder}
+    instructions::TransferV1CpiBuilder
 };
-use anchor_spl::token_interface::{Mint,TokenInterface};
 use crate::state::Marketplace;
 use crate::state::Listing;
 use crate::error::MarketplaceError;
@@ -44,6 +40,7 @@ pub struct Delist<'info> {
     )]
     pub listing: Account<'info, Listing>,
 
+    /// CHECK: address is constrained to MPL_CORE_ID
     #[account(address = MPL_CORE_ID)]
     pub mpl_core_program:UncheckedAccount<'info>,
     pub system_program: Program<'info, System>,
@@ -53,11 +50,11 @@ pub struct Delist<'info> {
 impl<'info> Delist<'info> {
     pub fn delist(&mut self) -> Result<()> {
 
-        let listing = self.listing.key();
+        let asset = self.asset.key();
 
         let signer_seeds: &[&[&[u8]]] = &[&[
             b"listing",
-            listing.as_ref(),
+            asset.as_ref(),
             &[self.listing.bump],
         ]];
 
@@ -68,7 +65,7 @@ impl<'info> Delist<'info> {
         .payer(&self.maker.to_account_info())
         .authority(Some(&self.listing.to_account_info()))
         .new_owner(&self.maker.to_account_info())
-        .system_program(Some((&self.system_program.to_account_info())))
+        .system_program(Some(&self.system_program.to_account_info()))
         .invoke_signed(signer_seeds)?;
 
         Ok(())

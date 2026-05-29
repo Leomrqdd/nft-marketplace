@@ -1,13 +1,9 @@
-use std::iter::Map;
-
 use anchor_lang::prelude::*;
 
 use mpl_core::{
     ID as MPL_CORE_ID,
-    accounts::BaseCollectionV1,
-    instructions::{TransferV1, TransferV1CpiBuilder}
+    instructions::TransferV1CpiBuilder
 };
-use anchor_spl::token_interface::{Mint,TokenInterface};
 use crate::state::Marketplace;
 use crate::state::Listing;
 
@@ -41,6 +37,7 @@ pub struct List<'info> {
     )]
     pub listing: Account<'info, Listing>,
 
+    /// CHECK: address is constrained to MPL_CORE_ID
     #[account(address = MPL_CORE_ID)]
     pub mpl_core_program:UncheckedAccount<'info>,
     pub system_program: Program<'info, System>,
@@ -63,7 +60,7 @@ impl<'info> List<'info> {
         .payer(&self.maker.to_account_info())
         .authority(Some(&self.maker.to_account_info()))
         .new_owner(&self.listing.to_account_info())
-        .system_program(Some((&self.system_program.to_account_info())))
+        .system_program(Some(&self.system_program.to_account_info()))
         .invoke()?;
         Ok(())
     }

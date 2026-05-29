@@ -1,17 +1,15 @@
-use anchor_lang::prelude::{borsh::de, *};
+use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
 
 use mpl_core::{
     ID as MPL_CORE_ID,
-    accounts::BaseCollectionV1,
-    instructions::{TransferV1, TransferV1CpiBuilder}
+    instructions::TransferV1CpiBuilder
 };
 use anchor_spl::token_interface::{Mint,TokenInterface,TokenAccount,transfer_checked, TransferChecked};
 use crate::state::Marketplace;
 use crate::state::Listing;
 use crate::error::MarketplaceError;
-use anchor_lang::system_program::{transfer, Transfer};
-use anchor_spl::token::{MintTo, mint_to};
+use anchor_spl::token::mint_to;
 
 
 #[derive(Accounts)]
@@ -69,7 +67,7 @@ pub struct BuyWithTokens<'info> {
         payer = taker,
         associated_token::mint = rewards_mint,
         associated_token::authority = taker,
-        associated_token::token_program = associated_token_program,
+        associated_token::token_program = token_program,
 
     )]
     pub taker_rewards_ata: InterfaceAccount<'info,TokenAccount>,
@@ -100,6 +98,7 @@ pub struct BuyWithTokens<'info> {
     )]
     pub maker_ata: InterfaceAccount<'info,TokenAccount>,
 
+    /// CHECK: address is constrained to MPL_CORE_ID
     #[account(address = MPL_CORE_ID)]
     pub mpl_core_program:UncheckedAccount<'info>,
     pub system_program: Program<'info, System>,
@@ -147,11 +146,11 @@ impl<'info> BuyWithTokens<'info> {
 
     
 
-        let listing = self.listing.key();
+        let asset = self.asset.key();
 
         let signer_seeds: &[&[&[u8]]] = &[&[
             b"listing",
-            listing.as_ref(),
+            asset.as_ref(),
             &[self.listing.bump],
         ]];
 
@@ -167,10 +166,10 @@ impl<'info> BuyWithTokens<'info> {
         .invoke_signed(signer_seeds)?;
 
 
-        let marketplace = self.marketplace.key();
+        let name_bytes = self.marketplace.name.as_bytes().to_vec();
         let signer_seeds_2 : &[&[&[u8]]] = &[&[
             b"marketplace",
-            marketplace.as_ref(),
+            name_bytes.as_ref(),
             &[self.marketplace.bump],
         ]];
 

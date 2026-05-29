@@ -1,9 +1,5 @@
 use anchor_lang::prelude::*;
 
-use mpl_core::{
-    ID as MPL_CORE_ID,
-    accounts::BaseCollectionV1,
-};
 use anchor_spl::token_interface::{Mint,TokenInterface};
 use crate::state::Marketplace;
 

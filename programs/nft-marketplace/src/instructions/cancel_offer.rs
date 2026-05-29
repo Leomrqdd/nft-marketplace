@@ -1,18 +1,13 @@
 use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
 
-use mpl_core::{
-    ID as MPL_CORE_ID,
-    accounts::BaseCollectionV1,
-    instructions::{TransferV1, TransferV1CpiBuilder}
-};
-use anchor_spl::token_interface::{Mint,TokenInterface,TokenAccount};
+use mpl_core::ID as MPL_CORE_ID;
+use anchor_spl::token_interface::TokenInterface;
 use crate::state::Marketplace;
 use crate::state::Offer;
 use crate::state::Listing;
 use crate::error::MarketplaceError;
 use anchor_lang::system_program::{transfer, Transfer};
-use anchor_spl::token::{MintTo, mint_to};
 
 
 #[derive(Accounts)]
@@ -73,6 +68,7 @@ pub struct CancelOffer<'info> {
     )]
     pub offer_vault: SystemAccount<'info>,
 
+    /// CHECK: address is constrained to MPL_CORE_ID
     #[account(address = MPL_CORE_ID)]
     pub mpl_core_program:UncheckedAccount<'info>,
     pub system_program: Program<'info, System>,
