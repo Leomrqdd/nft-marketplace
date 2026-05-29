@@ -4,6 +4,7 @@ pub mod create_asset_ix;
 pub mod buy_ix;
 pub mod delist_ix;
 pub mod withdraw_fees_ix;
+pub mod buy_with_token_ix;
 
 
 
@@ -15,3 +16,4 @@ pub use create_asset_ix::*;
 pub use buy_ix::*;
 pub use delist_ix::*;
 pub use withdraw_fees_ix::*;
+pub use buy_with_token_ix::*;

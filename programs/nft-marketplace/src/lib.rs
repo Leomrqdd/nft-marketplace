@@ -19,8 +19,8 @@ pub mod anchor_core_staking {
         ctx.accounts.initialize(fee_bps, name, &ctx.bumps)
     }
 
-    pub fn list(ctx: Context<List>, name: String, price: u64) -> Result<()> {
-        ctx.accounts.list(price, &ctx.bumps)
+    pub fn list(ctx: Context<List>, name: String, price: u64, payment_mint: Option<Pubkey>) -> Result<()> {
+        ctx.accounts.list(price, payment_mint, &ctx.bumps)
     }
 
     pub fn buy(ctx: Context<Buy>, name: String) -> Result<()> {
@@ -29,6 +29,10 @@ pub mod anchor_core_staking {
 
     pub fn delist(ctx: Context<Delist>, name: String) -> Result<()> {
         ctx.accounts.delist()
+    }
+
+    pub fn buy_with_tokens(ctx: Context<BuyWithTokens>, name: String) -> Result<()> {
+        ctx.accounts.buywithtokens()
     }
 
     pub fn withdraw_fees(ctx: Context<WithdrawFees>, name: String) -> Result<()> {

@@ -27,7 +27,7 @@ pub struct BuyWithTokens<'info> {
         seeds = [b"marketplace", name.as_str().as_bytes()],
         bump = marketplace.bump,
     )]
-    pub marketplace: Account<'info, Marketplace>,
+    pub marketplace: Box<Account<'info, Marketplace>>,
 
      /// CHECK: this is the asset the maker wants to sell
     #[account(mut)]
@@ -45,7 +45,7 @@ pub struct BuyWithTokens<'info> {
         has_one = maker @ MarketplaceError::InvalidListing,
         has_one = asset @ MarketplaceError::InvalidListing,
     )]
-    pub listing: Account<'info, Listing>,
+    pub listing: Box<Account<'info, Listing>>,
 
     #[account(
         seeds = [b"treasury", marketplace.key().as_ref()],
@@ -60,7 +60,7 @@ pub struct BuyWithTokens<'info> {
         seeds = [b"reward_mint", marketplace.key().as_ref()],
         bump = marketplace.rewards_bump,
     )]
-    pub rewards_mint: InterfaceAccount<'info,Mint>,
+    pub rewards_mint: Box<InterfaceAccount<'info,Mint>>,
 
     #[account(
         init_if_needed,
@@ -70,17 +70,17 @@ pub struct BuyWithTokens<'info> {
         associated_token::token_program = token_program,
 
     )]
-    pub taker_rewards_ata: InterfaceAccount<'info,TokenAccount>,
+    pub taker_rewards_ata: Box<InterfaceAccount<'info,TokenAccount>>,
 
 
-    pub payment_mint: InterfaceAccount<'info, Mint>,
+    pub payment_mint: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(
         mut,
         associated_token::mint = payment_mint,
         associated_token::authority = treasury,
     )]
-    pub treasury_ata: InterfaceAccount<'info,TokenAccount>,
+    pub treasury_ata: Box<InterfaceAccount<'info,TokenAccount>>,
 
 
     #[account(
@@ -88,7 +88,7 @@ pub struct BuyWithTokens<'info> {
         associated_token::mint = payment_mint,
         associated_token::authority = taker,
     )]
-    pub taker_ata: InterfaceAccount<'info,TokenAccount>,
+    pub taker_ata: Box<InterfaceAccount<'info,TokenAccount>>,
 
 
     #[account(
@@ -96,7 +96,7 @@ pub struct BuyWithTokens<'info> {
         associated_token::mint = payment_mint,
         associated_token::authority = maker,
     )]
-    pub maker_ata: InterfaceAccount<'info,TokenAccount>,
+    pub maker_ata: Box<InterfaceAccount<'info,TokenAccount>>,
 
     /// CHECK: address is constrained to MPL_CORE_ID
     #[account(address = MPL_CORE_ID)]

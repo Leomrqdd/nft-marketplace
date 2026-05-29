@@ -16,7 +16,7 @@ pub fn list_ix(
 ) -> Instruction {
     Instruction::new_with_bytes(
         nft_marketplace::id(),
-        &nft_marketplace::instruction::List { name: "My Marketplace".to_string(), price: 100 }.data(),
+        &nft_marketplace::instruction::List { name: "My Marketplace".to_string(), price: 100, payment_mint: None }.data(),
         nft_marketplace::accounts::List {
             maker: maker.pubkey(),
             marketplace,

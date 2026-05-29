@@ -1,24 +1,14 @@
 use {
-    anchor_spl::associated_token::{self, get_associated_token_address},
     litesvm::LiteSVM,
-    litesvm_token::CreateMint,
-    litesvm_token::MintTo,
-    litesvm_token::Transfer,
-    litesvm_token::CreateAssociatedTokenAccount,
+    litesvm_token::{CreateMint, MintTo, CreateAssociatedTokenAccount},
     solana_instruction::Instruction,
     solana_message::{Message, VersionedMessage},
     solana_signer::Signer,
     solana_keypair::Keypair,
     solana_transaction::versioned::VersionedTransaction,
     solana_pubkey::Pubkey,
-    anchor_lang::AccountDeserialize,
-    anchor_spl::token::TokenAccount,
-    mpl_core::{
-        accounts::{BaseCollectionV1,BaseAssetV1},
-        fetch_plugin,
-        types::{Attributes, FreezeDelegate, PluginType},
-    },
-    solana_account_info::AccountInfo,
+    anchor_lang::{AccountDeserialize, Id, InstructionData, ToAccountMetas},
+    mpl_core::accounts::BaseAssetV1,
 };
 
 use solana_clock::Clock;
@@ -277,4 +267,101 @@ fn test_withdraw_fees() {
 
     let admin_balance_after = svm.get_balance(&payer.pubkey()).unwrap();
     assert!(admin_balance_after > admin_balance_before);
+}
+
+#[test]
+fn test_buy_with_token() {
+    let (
+        mut svm,
+        payer,
+        marketplace,
+        treasury,
+        rewards_mint,
+        asset,
+        _collection,
+        listing,
+    ) = setup_listing();
+
+    // créer le payment mint
+    let payment_mint_authority = Keypair::new();
+    let payment_mint = CreateMint::new(&mut svm, &payer)
+        .authority(&payment_mint_authority.pubkey())
+        .decimals(6)
+        .send()
+        .unwrap();
+
+    // créer les ATAs pour taker, maker (payer) et treasury
+    let taker = Keypair::new();
+    svm.airdrop(&taker.pubkey(), 10_000_000_000).unwrap();
+
+    let taker_ata = CreateAssociatedTokenAccount::new(&mut svm, &taker, &payment_mint)
+        .owner(&taker.pubkey())
+        .send()
+        .unwrap();
+
+    let maker_ata = CreateAssociatedTokenAccount::new(&mut svm, &payer, &payment_mint)
+        .owner(&payer.pubkey())
+        .send()
+        .unwrap();
+
+    let treasury_ata = CreateAssociatedTokenAccount::new(&mut svm, &payer, &payment_mint)
+        .owner(&treasury)
+        .send()
+        .unwrap();
+
+    let taker_rewards_ata = CreateAssociatedTokenAccount::new(&mut svm, &taker, &rewards_mint)
+        .owner(&taker.pubkey())
+        .send()
+        .unwrap();
+
+    // mint des tokens au taker (price=100, on en mint largement plus)
+    MintTo::new(&mut svm, &payer, &payment_mint, &taker_ata, 1_000_000)
+        .owner(&payment_mint_authority)
+        .send()
+        .unwrap();
+
+    // créer et lister l'asset avec payment_mint
+    send(&mut svm, &[create_asset_ix(&payer, &asset, None)], &payer, &[&payer, &asset]).unwrap();
+
+    let list_ix_with_token = Instruction::new_with_bytes(
+        nft_marketplace::id(),
+        &nft_marketplace::instruction::List {
+            name: "My Marketplace".to_string(),
+            price: 100,
+            payment_mint: Some(payment_mint),
+        }.data(),
+        nft_marketplace::accounts::List {
+            maker: payer.pubkey(),
+            marketplace,
+            asset: asset.pubkey(),
+            collection: None,
+            listing,
+            mpl_core_program: mpl_core::ID,
+            system_program: anchor_lang::prelude::System::id(),
+        }.to_account_metas(None),
+    );
+    send(&mut svm, &[list_ix_with_token], &payer, &[&payer]).unwrap();
+
+    // buy with token
+    let ix = buy_with_token_ix(
+        &taker,
+        payer.pubkey(),
+        marketplace,
+        asset.pubkey(),
+        listing,
+        treasury,
+        rewards_mint,
+        taker_rewards_ata,
+        payment_mint,
+        treasury_ata,
+        taker_ata,
+        maker_ata,
+    );
+
+    let res = send(&mut svm, &[ix], &taker, &[&taker]);
+    assert!(res.is_ok(), "{:#?}", res.unwrap_err());
+
+    let account = svm.get_account(&asset.pubkey()).unwrap();
+    let asset_data = BaseAssetV1::from_bytes(&account.data).unwrap();
+    assert_eq!(asset_data.owner, taker.pubkey());
 }

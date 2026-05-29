@@ -45,12 +45,12 @@ pub struct List<'info> {
 
 
 impl<'info> List<'info> {
-    pub fn list(&mut self, price: u64, bumps: &ListBumps) -> Result<()> {
+    pub fn list(&mut self, price: u64, payment_mint: Option<Pubkey>, bumps: &ListBumps) -> Result<()> {
         self.listing.set_inner(Listing {
             maker: self.maker.key(),
             asset: self.asset.key(),
             price,
-            payment_mint: None,
+            payment_mint,
             bump: bumps.listing,
         });
 
