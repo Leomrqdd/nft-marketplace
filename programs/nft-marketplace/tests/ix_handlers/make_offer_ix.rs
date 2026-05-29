@@ -1,0 +1,45 @@
+use {
+    anchor_lang::{Id, InstructionData, ToAccountMetas, prelude::System},
+    anchor_spl::{associated_token::AssociatedToken, token::Token},
+    mpl_core::ID as MPL_CORE_ID,
+    solana_instruction::Instruction,
+    solana_keypair::Keypair,
+    solana_pubkey::Pubkey,
+    solana_signer::Signer,
+};
+
+pub fn make_offer_ix(
+    taker: &Keypair,
+    maker: Pubkey,
+    marketplace: Pubkey,
+    asset: Pubkey,
+    collection: Option<Pubkey>,
+    listing: Pubkey,
+    treasury: Pubkey,
+    offer: Pubkey,
+    offer_vault: Pubkey,
+) -> Instruction {
+    Instruction::new_with_bytes(
+        nft_marketplace::id(),
+        &nft_marketplace::instruction::MakeOffer {
+            name: "My Marketplace".to_string(),
+            offer: 2,
+        }.data(),
+        nft_marketplace::accounts::MakeOffer {
+            taker: taker.pubkey(),
+            maker,
+            marketplace,
+            asset,
+            collection,
+            listing,
+            treasury,
+            offer,
+            offer_vault,
+            mpl_core_program: MPL_CORE_ID,
+            system_program: System::id(),
+            token_program: Token::id(),
+            associated_token_program: AssociatedToken::id(),
+        }
+        .to_account_metas(None),
+    )
+}

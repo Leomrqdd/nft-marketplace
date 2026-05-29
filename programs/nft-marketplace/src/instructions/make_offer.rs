@@ -61,6 +61,7 @@ pub struct MakeOffer<'info> {
     pub offer: Account<'info, Offer>,
 
     #[account(
+        mut,
         seeds = [b"offer_vault", listing.key().as_ref(), taker.key().as_ref()],
         bump,
     )]

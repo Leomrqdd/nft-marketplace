@@ -35,6 +35,19 @@ pub mod anchor_core_staking {
         ctx.accounts.buywithtokens()
     }
 
+    pub fn make_offer(ctx: Context<MakeOffer>, name: String, offer: u64) -> Result<()> {
+        ctx.accounts.make_offer(offer, &ctx.bumps)
+    }
+
+     pub fn take_offer(ctx: Context<TakeOffer>, name: String) -> Result<()> {
+        ctx.accounts.take_offer()
+    }
+
+     pub fn cancel_offer(ctx: Context<CancelOffer>, name: String) -> Result<()> {
+        ctx.accounts.cancel_offer()
+    }
+
+
     pub fn withdraw_fees(ctx: Context<WithdrawFees>, name: String) -> Result<()> {
         ctx.accounts.withdraw_fees()
     }

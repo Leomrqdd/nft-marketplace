@@ -17,6 +17,7 @@ mod ix_handlers;
 use ix_handlers::*;
 
 use nft_marketplace::state::Marketplace;
+use nft_marketplace::state::Offer;
 
 
 fn send(
@@ -364,4 +365,164 @@ fn test_buy_with_token() {
     let account = svm.get_account(&asset.pubkey()).unwrap();
     let asset_data = BaseAssetV1::from_bytes(&account.data).unwrap();
     assert_eq!(asset_data.owner, taker.pubkey());
+}
+
+
+
+
+#[test]
+fn test_make_offer() {
+    let (
+        mut svm,
+        payer,
+        marketplace,
+        treasury,
+        rewards_mint,
+        asset,
+        collection,
+        listing,
+    ) = setup_listing();
+
+    let create_ix = create_asset_ix(&payer, &asset, None);
+    send(&mut svm, &[create_ix], &payer, &[&payer, &asset]).unwrap();
+
+
+    let list_ix = list_ix(
+        &payer,
+        marketplace,
+        asset.pubkey(),
+        None,
+        listing,
+    );
+
+    send(&mut svm, &[list_ix], &payer, &[&payer]).unwrap();
+
+
+    let taker = Keypair::new();
+     svm.airdrop(&taker.pubkey(), 10000000).unwrap();
+    let program_id = nft_marketplace::id();
+
+    let offer = Pubkey::find_program_address(
+        &[b"offer", listing.as_ref(), taker.pubkey().as_ref()],
+        &program_id,
+    ).0;
+
+    let offer_vault = Pubkey::find_program_address(
+        &[b"offer_vault", listing.as_ref(), taker.pubkey().as_ref()], 
+        &program_id,
+    ).0;
+
+
+
+
+
+    let make_offer_ix = make_offer_ix(
+        &taker,
+        payer.pubkey(),
+        marketplace,
+        asset.pubkey(),
+        None,
+        listing,
+        treasury,
+        offer,
+        offer_vault,
+    );
+    
+
+
+    let res = send(&mut svm, &[make_offer_ix], &taker, &[&taker]);
+    assert!(res.is_ok(), "{:#?}", res.unwrap_err());
+
+    let account = svm.get_account(&offer).unwrap();
+    let offer_data = Offer::try_deserialize(&mut account.data.as_ref()).unwrap();
+    assert_eq!(offer_data.taker, taker.pubkey());
+    assert_eq!(offer_data.asset, asset.pubkey());
+    assert_eq!(offer_data.offer_amount, 2);
+
+
+    let offer_vault_balance = svm.get_balance(&offer_vault).unwrap();
+    assert!(offer_vault_balance >= 2);
+}
+
+
+
+fn setup_offer() -> (LiteSVM, Keypair, Pubkey, Pubkey, Pubkey, Keypair, Keypair, Pubkey, Keypair, Pubkey, Pubkey) {
+    let (mut svm, payer, marketplace, treasury, rewards_mint, asset, collection, listing) = setup_listing();
+    let program_id = nft_marketplace::id();
+
+    send(&mut svm, &[create_asset_ix(&payer, &asset, None)], &payer, &[&payer, &asset]).unwrap();
+    send(&mut svm, &[list_ix(&payer, marketplace, asset.pubkey(), None, listing)], &payer, &[&payer]).unwrap();
+
+    let taker = Keypair::new();
+    svm.airdrop(&taker.pubkey(), 10_000_000_000).unwrap();
+
+    let offer = Pubkey::find_program_address(
+        &[b"offer", listing.as_ref(), taker.pubkey().as_ref()],
+        &program_id,
+    ).0;
+    let offer_vault = Pubkey::find_program_address(
+        &[b"offer_vault", listing.as_ref(), taker.pubkey().as_ref()],
+        &program_id,
+    ).0;
+
+    send(&mut svm, &[make_offer_ix(&taker, payer.pubkey(), marketplace, asset.pubkey(), None, listing, treasury, offer, offer_vault)], &taker, &[&taker]).unwrap();
+
+    (svm, payer, marketplace, treasury, rewards_mint, asset, collection, listing, taker, offer, offer_vault)
+}
+
+#[test]
+fn test_take_offer() {
+    let (mut svm, payer, marketplace, treasury, rewards_mint, asset, _collection, listing, taker, offer, offer_vault) = setup_offer();
+
+    let taker_rewards_ata = CreateAssociatedTokenAccount::new(&mut svm, &payer, &rewards_mint)
+        .owner(&taker.pubkey())
+        .send()
+        .unwrap();
+
+    let ix = take_offer_ix(
+        &payer,
+        taker.pubkey(),
+        marketplace,
+        asset.pubkey(),
+        listing,
+        treasury,
+        rewards_mint,
+        taker_rewards_ata,
+        offer,
+        offer_vault,
+    );
+
+    let res = send(&mut svm, &[ix], &payer, &[&payer]);
+    assert!(res.is_ok(), "{:#?}", res.unwrap_err());
+
+    let account = svm.get_account(&asset.pubkey()).unwrap();
+    let asset_data = BaseAssetV1::from_bytes(&account.data).unwrap();
+    assert_eq!(asset_data.owner, taker.pubkey());
+}
+
+#[test]
+fn test_cancel_offer() {
+    let (mut svm, payer, marketplace, treasury, _rewards_mint, asset, _collection, listing, taker, offer, offer_vault) = setup_offer();
+
+    let taker_balance_before = svm.get_balance(&taker.pubkey()).unwrap();
+
+    let ix = cancel_offer_ix(
+        &taker,
+        payer.pubkey(),
+        marketplace,
+        asset.pubkey(),
+        listing,
+        treasury,
+        offer,
+        offer_vault,
+    );
+
+    let res = send(&mut svm, &[ix], &taker, &[&taker]);
+    assert!(res.is_ok(), "{:#?}", res.unwrap_err());
+
+    let vault_balance = svm.get_balance(&offer_vault).unwrap();
+    assert_eq!(vault_balance, 0);
+
+    let taker_balance_after = svm.get_balance(&taker.pubkey()).unwrap();
+    assert!(taker_balance_after > taker_balance_before);
 }

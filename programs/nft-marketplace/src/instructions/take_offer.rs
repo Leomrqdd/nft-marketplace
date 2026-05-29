@@ -162,7 +162,7 @@ impl<'info> TakeOffer<'info> {
         TransferV1CpiBuilder::new(&self.mpl_core_program.to_account_info())
         .asset(&self.asset.to_account_info())
         .collection(self.collection.as_ref().map(|c| c.as_ref()))
-        .payer(&self.taker.to_account_info())
+        .payer(&self.maker.to_account_info())
         .authority(Some(&self.listing.to_account_info()))
         .new_owner(&self.taker.to_account_info())
         .system_program(Some(&self.system_program.to_account_info()))
