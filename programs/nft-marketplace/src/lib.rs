@@ -27,5 +27,13 @@ pub mod anchor_core_staking {
         ctx.accounts.buy()
     }
 
+    pub fn delist(ctx: Context<Delist>, name: String) -> Result<()> {
+        ctx.accounts.delist()
+    }
+
+    pub fn withdraw_fees(ctx: Context<WithdrawFees>, name: String) -> Result<()> {
+        ctx.accounts.withdraw_fees()
+    }
+
 }
 

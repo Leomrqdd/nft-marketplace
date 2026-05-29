@@ -15,10 +15,6 @@ pub struct WithdrawFees<'info> {
     #[account(mut)]
     pub admin: Signer<'info>,
 
-    /// CHECK: this is the maker of the listing
-    #[account(mut)]
-    pub maker: UncheckedAccount<'info>,
-
     #[account(
         seeds = [b"marketplace", name.as_str().as_bytes()],
         bump = marketplace.bump,

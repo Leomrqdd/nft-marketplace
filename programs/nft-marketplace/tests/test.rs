@@ -225,3 +225,56 @@ fn test_buy() {
     assert_eq!(asset_data.owner, taker.pubkey());
 }
 
+#[test]
+fn test_delist() {
+    let (
+        mut svm,
+        payer,
+        marketplace,
+        treasury,
+        rewards_mint,
+        asset,
+        collection,
+        listing,
+    ) = setup_listing();
+
+    send(&mut svm, &[create_asset_ix(&payer, &asset, None)], &payer, &[&payer, &asset]).unwrap();
+    send(&mut svm, &[list_ix(&payer, marketplace, asset.pubkey(), None, listing)], &payer, &[&payer]).unwrap();
+
+    let ix = delist_ix(&payer, marketplace, asset.pubkey(), listing);
+    let res = send(&mut svm, &[ix], &payer, &[&payer]);
+    assert!(res.is_ok(), "{:#?}", res.unwrap_err());
+
+    let account = svm.get_account(&asset.pubkey()).unwrap();
+    let asset_data = BaseAssetV1::from_bytes(&account.data).unwrap();
+    assert_eq!(asset_data.owner, payer.pubkey());
+}
+
+#[test]
+fn test_withdraw_fees() {
+    let (
+        mut svm,
+        payer,
+        marketplace,
+        treasury,
+        rewards_mint,
+        _asset,
+        _collection,
+        _listing,
+    ) = setup_listing();
+
+    let fees: u64 = 1_000_000_000;
+    svm.airdrop(&treasury, fees).unwrap();
+
+    let admin_balance_before = svm.get_balance(&payer.pubkey()).unwrap();
+
+    let ix = withdraw_fees_ix(&payer, marketplace, treasury);
+    let res = send(&mut svm, &[ix], &payer, &[&payer]);
+    assert!(res.is_ok(), "{:#?}", res.unwrap_err());
+
+    let treasury_balance = svm.get_balance(&treasury).unwrap();
+    assert_eq!(treasury_balance, 0);
+
+    let admin_balance_after = svm.get_balance(&payer.pubkey()).unwrap();
+    assert!(admin_balance_after > admin_balance_before);
+}
